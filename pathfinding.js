@@ -6,12 +6,14 @@ var c = canvas.getContext("2d");
 var holdingDownMouse = false;
 
 var movesArray = [];
-var bestPath = [];
+var drawPath = [];
 
 var startRow = 1;
 var startColumn = 1;
 var endRow = 28;
 var endColumn = 28;
+
+var mode = "DFS";
 
 var gridDimension = 30;
 
@@ -27,10 +29,26 @@ var blue = "#0000FF";
 document.addEventListener("mousedown", e => {
   if (holdingDownMouse) {
     holdingDownMouse = false;
-    var ret = BFS(startRow, startColumn, endRow, endColumn);
-    movesArray = ret[0];
-    bestPath = ret[1];
-    animateBFS();
+    if (mode.localeCompare("BFS") == 0) {
+      var ret = BFS(startRow, startColumn, endRow, endColumn);
+      movesArray = ret[0];
+      drawPath = ret[1];
+      animateBFS();
+    }
+    if (mode.localeCompare("DFS") == 0) {
+      var visited = new Array(gridDimension);
+      for (var i = 0; i < gridDimension; i++) {
+        visited[i] = new Array(gridDimension);
+        for (var j = 0; j < gridDimension; j++) {
+          visited[i][j] = false;
+        }
+      }
+      visited[startRow][startColumn] = true;
+      var ret = DFS(startRow, startColumn, endRow, endColumn, visited, [], []);
+      movesArray = ret[0];
+      drawPath = ret[1];
+      animateDFS();
+    }
   }
   else holdingDownMouse = true;
 });
@@ -133,6 +151,32 @@ function BFS(rStart, cStart, rFinish, cFinish) {
   return [allSteps, [rStart, cStart]];
 }
 
+var flagDFS = false;
+var finalPathDFS = [];
+
+function DFS(r, c, rFinish, cFinish, visited, listOfMoves, path) {
+  if (flagDFS) return;
+  listOfMoves.push([r, c]);
+  var dx = [1, 0, -1, 0];
+  var dy = [0, 1, 0, -1];
+  for (var i = 0; i < 4; i++) {
+    var rNew = r + dx[i];
+    var cNew = c + dy[i];
+    if (rNew == rFinish && cNew == cFinish) {
+      flagDFS = true;
+      finalPathDFS = path;
+    }
+    if (rNew >= 0 && rNew < gridDimension && cNew >= 0 && cNew < gridDimension
+        && !isBlocked[rNew][cNew] && !visited[rNew][cNew]) {
+      visited[rNew][cNew] = true;
+      var pathNew = path.slice();
+      pathNew.push([rNew, cNew]);
+      DFS(rNew, cNew, rFinish, cFinish, visited, listOfMoves, pathNew);
+    }
+  }
+  return [listOfMoves, finalPathDFS];
+}
+
 drawGrid(gridDimension);
 
 fillCell(xCellToPixel(startColumn), yCellToPixel(startRow), green);
@@ -146,13 +190,31 @@ function animateBFS() {
     fillCell(xCellToPixel(move[1]), yCellToPixel(move[0]), blue);
     index++;
   }
-  if (index >= movesArray.length) {
+  if (index == movesArray.length) index++;
+  if (index > movesArray.length) {
     var indexIntoPath = index - movesArray.length;
-    if (indexIntoPath < bestPath.length) {
-      var move = bestPath[indexIntoPath];
+    if (indexIntoPath < drawPath.length) {
+      var move = drawPath[indexIntoPath];
       fillCell(xCellToPixel(move[1]), yCellToPixel(move[0]), green);
       index++;
     }
   }
   requestAnimationFrame(animateBFS);
+}
+
+function animateDFS() {
+  if (index < movesArray.length) {
+    var move = movesArray[index];
+    fillCell(xCellToPixel(move[1]), yCellToPixel(move[0]), blue);
+    index++;
+  }
+  if (index >= movesArray.length) {
+    var indexIntoPath = index - movesArray.length;
+    if (indexIntoPath < drawPath.length) {
+      var move = drawPath[indexIntoPath];
+      fillCell(xCellToPixel(move[1]), yCellToPixel(move[0]), green);
+      index++;
+    }
+  }
+  requestAnimationFrame(animateDFS);
 }

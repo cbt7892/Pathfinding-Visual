@@ -13,7 +13,7 @@ var startColumn = 1;
 var endRow = 28;
 var endColumn = 28;
 
-var mode = "DFS";
+var mode = "BFS";
 
 var gridDimension = 30;
 
